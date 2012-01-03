@@ -22,7 +22,9 @@ module ActiveRestrictor
     # are applied directly against the user model.
     def add_restrictor(name, opts={})
       self.restrictors ||= []
-      new_opts = {:name => name, :id => :id, :enabled => true, :type => :full}.merge(opts)
+      new_opts = {:name => name, :id => :id, :enabled => true, :type => :full, :include => []}.merge(opts)
+      new_opts[:include] = [new_opts[:include]] unless new_opts[:include].is_a?(Array)
+      new_opts[:include].push(name) unless new_opts[:include].map(&:to_s).include?(name.to_s)
       self.restrictors.push(new_opts)
       if(new_opts[:type] == :full)
         self.class_eval do
@@ -62,6 +64,16 @@ module ActiveRestrictor
       self.restrictors.find_all{|restrictor| check_enabled(restrictor[:enabled]) == true}
     end
 
+    # hash:: Restrictor hash
+    # Provides class of restrictor
+    def restrictor_class(hash)
+      if(restrictor[:class].present?)
+        restrictor[:class]
+      else
+        self.relect_on_association(restrictor[:name]).klass
+      end
+    end
+
     private
 
     # arg:: Enabled argument (generally: restrictor[:enabled])
@@ -80,6 +92,12 @@ module ActiveRestrictor
   end
 
   module InstanceMethods
+
+    # hash:: Restrictor hash
+    # Provides class of restrictor
+    def restrictor_class(hash)
+      self.class.restrictor_class(hash)
+    end
 
     # Returns restrictors not of type :basic
     def full_restrictors
@@ -114,7 +132,7 @@ module ActiveRestrictor
           user_scope = user_scope.where(restrictor[:condition])
         end
         unless(restrictor[:type] == :basic)
-          user_scope = user_scope.where("#{restrictor[:table_name] || restrictor[:class].table_name}.id IN (#{self.send(restrictor[:name]).scoped.select(:id).to_sql})")
+          user_scope = user_scope.where("#{restrictor[:table_name] || restrictor_class(restrictor).table_name}.id IN (#{self.send(restrictor[:name]).scoped.select(:id).to_sql})")
         end
       end
       if((methods = enabled_restrictors.find_all{|res| res[:user_custom]}).size > 0)
@@ -166,7 +184,7 @@ module ActiveRestrictor
           scope = klass.scoped
           klass.full_restrictors.each do |restrictor|
             next if restrictor[:include].blank? || restrictor[:model_custom].present?
-            rtable_name = restrictor[:table_name] || restrictor[:class].table_name
+            rtable_name = restrictor[:table_name] || restrictor_class(restrictor).table_name
             r_scope = self.send(restrictor[:include]).scoped.select("#{rtable_name}.id")
             r_scope.arel.ast.cores.first.projections.delete_at(0) # gets rid of the association_name.* rails insists upon
             if(restrictor[:default_view_all])
