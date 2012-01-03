@@ -1,0 +1,108 @@
+== ActiveRestrictors
+
+Chainable ActiveRecord restriction chaining.
+
+=== Overview
+
+Restrictions are made via join tables between two models and a User object. Imagine these models:
+
+  +-------+       +---------------+      +------------+    +--------------+       +------+
+  | Fubar |<*----- FubarPermission|<-----| Permission |--->|UserPermission|-----*>| User |
+  +-------+       +---------------+      +------------+    +--------------+       +------+
+
+Our model definitions would look something like:
+
+  class Permission < ActiveRecord::Base
+    has_many :fubar_permissions, :dependent => :destroy
+    has_many :fubars, :through => :fubar_permissions
+    has_many :user_permissions, :dependent => :destroy
+    has_many :users, :through => :user_permissions
+  end
+
+  class FubarPermission < ActiveRecord::Base
+    belongs_to :fubar
+    belongs_to :permission
+  end
+
+  class Fubar < ActiveRecord::Base
+    has_many :fubar_permissions, :dependent => :destroy
+    has_many :permissions, :through => :fubar_permissions
+  end
+
+  class UserPermission < ActiveRecord::Base
+    belongs_to :user
+    belongs_to :permission
+  end
+
+  class User < ActiveRecord::Base
+    has_many :user_permissions, :dependent => :destroy
+    has_many :users, :through => :user_permissions
+  end
+
+Now, suppose a User should only be allowed to to see a Fubar instance if the Fubar instance and the User both have the same permission assigned to them. We modify Fubar like so:
+
+  class Fubar < ActiveRecord::Base
+    ...
+    include ActiveRestrictor
+
+    add_restrictor(:permissions,
+      :enabled => lambda{ User.current_user.fubars_enabled? },
+      :value => :name,
+      :multiple => true,
+      :default_view_all => true,
+      :user_values_only => lambda{ User.current_user }
+    )
+  end
+
+A quick overview of what these options are doing. 
+
+* :enabled -> Restrictor is applied/not applied. This can be a static value or it can be a callable block to allow dynamic enabling
+* :value -> This is the attribute on the Permission model that is displayed to the user
+* :multiple -> Allows multiple Permissions to be applied on the restriction
+* :default_view_all -> If Fubar has no Permissions applied, it is viewable by all
+* :user_values_only -> Only Permissions assigned to the user will be viewable in edit mode
+
+With the inclusion of the restrictor, we now have two new methods available. The first is on User instances:
+
+  User.first.allowed_fubars -> Returns scoping of Fubars the given user instance has access to
+
+The second is on Fubar instances:
+
+  Fubar.first.allowed_users -> Returns scoping of the Users allowed to acces this instance
+
+== View Helpers
+
+=== Details
+
+  %table
+    %tr
+      %td= 'Name'
+      %td= @fubar.name
+    - display_full_restictors(@fubar).each do |pair|
+      %tr
+        %td= "#{pair.first}:"
+        %td= pair.last
+
+=== Edit
+
+  - form_for(@fubar) do |f|
+    %table
+      %tr
+        %td= 'Name:'
+        %td= f.text_field :name
+      - edit_full_restrictors(@fubar, f).each do |pair|
+        %tr
+          %td= "#{pair.first}:"
+          %td= pair.last
+
+== Advanced Restrictor
+
+=== User custom
+
+- TODO
+
+=== Model custom
+
+- TODO
+
+
