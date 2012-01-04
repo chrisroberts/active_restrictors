@@ -197,9 +197,9 @@ module ActiveRestrictor
                 " OR #{rtable_name}.id IS NULL" if restrictor[:default_view_all]
               }"
             )
-            if((methods = klass.restrictors.find_all{|res| res[:model_custom]}).size > 0)
-              scope = methods.inject(scope){|result,func| func.call(result, self)}
-            end
+          end
+          if((methods = klass.restrictors.map{|res| res[:model_custom]}.compact).size > 0)
+            scope = methods.inject(scope){|result,func| func.call(result, self)}
           end
           scope
         else
