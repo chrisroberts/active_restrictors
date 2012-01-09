@@ -105,4 +105,9 @@ The second is on Fubar instances:
 
 - TODO
 
+== Bugs/Features
 
+* Please report any bugs via gihub issues
+
+Currently 'User' is static within the code. This will be removed in the future to allow restrictors
+to be applied to any two models.
