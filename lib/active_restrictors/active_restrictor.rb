@@ -67,10 +67,10 @@ module ActiveRestrictor
     # hash:: Restrictor hash
     # Provides class of restrictor
     def restrictor_class(hash)
-      if(restrictor[:class].present?)
-        restrictor[:class]
+      if(hash[:class].present?)
+        hash[:class]
       else
-        self.relect_on_association(restrictor[:name]).klass
+        self.relect_on_association(hash[:name]).klass
       end
     end
 
@@ -145,65 +145,69 @@ module ActiveRestrictor
   def self.included(klass)
     # Patch up the model we have been called on
     ([klass] + klass.descendants).compact.each do |base|
-      cattr_accessor :restrictors
-      
-      extend ClassMethods
-      include InstanceMethods
+      base.class_eval do
+        cattr_accessor :restrictors
+        
+        extend ClassMethods
+        include InstanceMethods
 
-      scope :allowed_for, lambda{|*args|
-        user = args.detect{|item|item.is_a?(User)}
-        where("#{table_name}.id IN (#{user.send("allowed_#{base.name.tableize}").select(:id).to_sql})")
-      }
+        scope :allowed_for, lambda{|*args|
+          user = args.detect{|item|item.is_a?(User)}
+          where("#{table_name}.id IN (#{user.send("allowed_#{base.name.tableize}").select(:id).to_sql})")
+        }
+      end
     end
     # Patch up the user to provide restricted methods
-    ([User] + User.descendants).compact.each do
-      # This patches a method onto the User instance to
-      # provide access to the allowed instance of the model
-      # in use. For example, if the restrictor module is
-      # included into the Fubar model, it will
-      # provide User#allowed_fubars
-      define_method("allowed_#{klass.name.tableize}") do
-        # First we perform a basic check against the User to see
-        # if this user instance is even allowed by default
-        user_scope = User.scoped
-        klass.basic_restrictors.each do |restriction|
-          if(restriction[:condition].is_a?(ActiveRecord::Relation))
-            user_scope = user_scope.merge(restriction[:condition])
-          elsif(restriction[:condition].respond_to?(:call))
-            user_scope = user_scope.merge(restriction[:condition].call)
-          elsif(restriction[:condition].present?)
-            user_scope = user_scope.where(restriction[:condition])
-          end
-          if(restriction[:include].is_a?(ActiveRecord::Relation))
-            user_scope = user_scope.merge(restriction[:include])
-          elsif(restriction[:include].present?)
-            user_scope = user_scope.join(restriction[:include])
-          end
-        end
-        if(user_scope.count > 0)
-          scope = klass.scoped
-          klass.full_restrictors.each do |restrictor|
-            next if restrictor[:include].blank? || restrictor[:model_custom].present?
-            rtable_name = restrictor[:table_name] || restrictor_class(restrictor).table_name
-            r_scope = self.send(restrictor[:include]).scoped.select("#{rtable_name}.id")
-            r_scope.arel.ast.cores.first.projections.delete_at(0) # gets rid of the association_name.* rails insists upon
-            if(restrictor[:default_view_all])
-              scope = scope.includes(restrictor[:name]) if restrictor[:name].present?
-            else
-              scope = scope.joins(restrictor[:name]) if restrictor[:name].present?
+    ([User] + User.descendants).compact.each do |user_klass|
+      user_klass.class_eval do
+        # This patches a method onto the User instance to
+        # provide access to the allowed instance of the model
+        # in use. For example, if the restrictor module is
+        # included into the Fubar model, it will
+        # provide User#allowed_fubars
+        define_method("allowed_#{klass.name.tableize}") do
+          # First we perform a basic check against the User to see
+          # if this user instance is even allowed by default
+          user_scope = User.scoped
+          klass.basic_restrictors.each do |restriction|
+            if(restriction[:condition].is_a?(ActiveRecord::Relation))
+              user_scope = user_scope.merge(restriction[:condition])
+            elsif(restriction[:condition].respond_to?(:call))
+              user_scope = user_scope.merge(restriction[:condition].call)
+            elsif(restriction[:condition].present?)
+              user_scope = user_scope.where(restriction[:condition])
             end
-            scope = scope.where(
-              "#{rtable_name}.id IN (#{r_scope.to_sql})#{
-                " OR #{rtable_name}.id IS NULL" if restrictor[:default_view_all]
-              }"
-            )
+            if(restriction[:include].is_a?(ActiveRecord::Relation))
+              user_scope = user_scope.merge(restriction[:include])
+            elsif(restriction[:include].present?)
+              user_scope = user_scope.join(restriction[:include])
+            end
           end
-          if((methods = klass.restrictors.map{|res| res[:model_custom]}.compact).size > 0)
-            scope = methods.inject(scope){|result,func| func.call(result, self)}
+          if(user_scope.count > 0)
+            scope = klass.scoped
+            klass.full_restrictors.each do |restrictor|
+              next if restrictor[:model_custom].present?
+              rtable_name = restrictor[:table_name] || klass.restrictor_class(restrictor).table_name
+              r_scope = self.send(restrictor[:name]).scoped.select("#{rtable_name}.id")
+              r_scope.arel.ast.cores.first.projections.delete_at(0) # gets rid of the association_name.* rails insists upon
+              if(restrictor[:default_view_all])
+                scope = scope.includes(restrictor[:name]) if restrictor[:name].present?
+              else
+                scope = scope.joins(restrictor[:name]) if restrictor[:name].present?
+              end
+              scope = scope.where(
+                "#{rtable_name}.id IN (#{r_scope.to_sql})#{
+                  " OR #{rtable_name}.id IS NULL" if restrictor[:default_view_all]
+                }"
+              )
+            end
+            if((methods = klass.restrictors.map{|res| res[:model_custom]}.compact).size > 0)
+              scope = methods.inject(scope){|result,func| func.call(result, self)}
+            end
+            scope
+          else
+            klass.where('false')
           end
-          scope
-        else
-          klass.where('false')
         end
       end
     end
