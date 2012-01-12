@@ -25,38 +25,26 @@ module ActiveRestrictor
       new_opts = {:name => name, :id => :id, :enabled => true, :type => :full, :include => []}.merge(opts)
       new_opts[:include] = [new_opts[:include]] unless new_opts[:include].is_a?(Array)
       new_opts[:include].push(name) unless new_opts[:include].map(&:to_s).include?(name.to_s)
+      new_opts[:class] = restrictor_class(new_opts)
       self.restrictors.push(new_opts)
-      if(new_opts[:type] == :full)
-        self.class_eval do
-          # This just creates a helper that will grab activerecord
-          # instance from passed in IDs for applied restriction
-          alias_method "original_#{name}=".to_sym, "#{name}=".to_sym
-          define_method("#{name}=") do |args|
-            args = (args.is_a?(Array) ? args : Array(args)).find_all{|arg|arg.present?}
-            new_args = []
-            ids = []
-            args.each do |item|
-              if(item.is_a?(ActiveRecord::Base) || (defined?(ActiveRecord::Relation) && item.is_a?(ActiveRecord::Relation)))
-                new_args << item
-              else
-                ids << item.to_i
-              end
-            end
-            new_args += new_opts[:class].find(ids) unless ids.empty?
-            self.send("original_#{name}=".to_sym, new_args)
-          end
-        end
-      end
     end
 
     # Returns restrictors not of type :basic
-    def full_restrictors
-      self.restrictors.find_all{|restrictor| restrictor[:type] != :basic && check_enabled(restrictor[:enabled]) == true}
+    # NOTE: Returns enabled by default. Provide :include_disabled to get all
+    def full_restrictors(*args)
+      self.restrictors.find_all do |restrictor| 
+        restrictor[:type] != :basic &&
+          (args.include?(:include_disabled) || check_enabled(restrictor[:enabled]) == true)
+      end
     end
 
     # Returns restrictors of type :basic
-    def basic_restrictors
-      self.restrictors.find_all{|restrictor| restrictor[:type] == :basic && check_enabled(restrictor[:enabled]) == true}
+    # NOTE: Returns enabled by default. Provide :include_disabled to get all
+    def basic_restrictors(*args)
+      self.restrictors.find_all do |restrictor| 
+        restrictor[:type] == :basic && 
+          (args.include?(:include_disabled) || check_enabled(restrictor[:enabled]) == true)
+      end
     end
 
     # Returns all restrictors that are currently in enabled state
@@ -70,7 +58,7 @@ module ActiveRestrictor
       if(hash[:class].present?)
         hash[:class]
       else
-        self.relect_on_association(hash[:name]).klass
+        self.reflect_on_association(hash[:name]).klass
       end
     end
 
@@ -100,13 +88,15 @@ module ActiveRestrictor
     end
 
     # Returns restrictors not of type :basic
-    def full_restrictors
-      self.class.full_restrictors
+    # NOTE: Returns enabled by default. Provide :include_disabled to get all
+    def full_restrictors(*args)
+      self.class.full_restrictors(*args)
     end
 
     # Returns restrictors of type :basic
-    def basic_restrictors
-      self.class.basic_restrictors
+    # NOTE: Returns enabled by default. Provide :include_disabled to get all
+    def basic_restrictors(*args)
+      self.class.basic_restrictors(*args)
     end
 
     # Returns all restrictors taht are currently in enabled status
@@ -189,7 +179,8 @@ module ActiveRestrictor
               next if restrictor[:model_custom].present?
               rtable_name = restrictor[:table_name] || klass.restrictor_class(restrictor).table_name
               r_scope = self.send(restrictor[:name]).scoped.select("#{rtable_name}.id")
-              r_scope.arel.ast.cores.first.projections.delete_at(0) # gets rid of the association_name.* rails insists upon
+              # this next bit gets rid of the association_name.* rails insists upon and any extra cruft
+              r_scope.arel.ast.cores.first.projections.delete_if{|item| item != "#{rtable_name}.id"} 
               if(restrictor[:default_view_all])
                 scope = scope.includes(restrictor[:name]) if restrictor[:name].present?
               else
