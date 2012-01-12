@@ -1,3 +1,8 @@
+== v0.1.2
+* Updated #full_restrictors to provide all restrictors
+* Updated view helpers to provide all restrictors
+* Updated form building to use proper *_ids naming scheme
+
 == v0.1.1
 * Fixed class eval blocks
 * Fixed hash variable naming
