@@ -1,8 +1,6 @@
 module ActiveRestrictors
   module View
 
-    include ActiveSupport::Inflector
-
     # obj:: Instance with restrictors enabled
     # args:: argument hash :
     #  :val_join:: string to join values with
@@ -53,11 +51,12 @@ module ActiveRestrictors
               end
             end
           end
+          @_restrictor_inflector_helper ||= Class.send(:include, ActiveSupport::Inflector).new
           values = restrictor[:class].find(:all, :order => restrictor[:value]) unless values
           [
             form.label(restrictor[:name]),
             form.collection_select(
-              "#{singularize(restrictor[:name])}_ids",
+              "#{@_restrictor_inflector_helper.singularize(restrictor[:name])}_ids",
               values,
               restrictor[:id],
               restrictor[:value],
