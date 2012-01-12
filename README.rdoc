@@ -1,6 +1,6 @@
 == ActiveRestrictors
 
-Chainable ActiveRecord restriction chaining.
+Chainable ActiveRecord restrictions.
 
 === Overview
 
