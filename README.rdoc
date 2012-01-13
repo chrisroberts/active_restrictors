@@ -47,10 +47,12 @@ Now, suppose a User should only be allowed to to see a Fubar instance if the Fub
 
     add_restrictor(:permissions,
       :enabled => lambda{ User.current_user.fubars_enabled? },
-      :value => :name,
-      :multiple => true,
-      :default_view_all => true,
-      :user_values_only => lambda{ User.current_user }
+      :views => {
+        :value => :name,
+        :multiple => true,
+        :default_view_all => true,
+        :user_values_only => lambda{ User.current_user }
+      }
     )
   end
 
@@ -95,7 +97,25 @@ The second is on Fubar instances:
           %td= "#{pair.first}:"
           %td= pair.last
 
-== Advanced Restrictor
+== Restrictor Types
+
+=== Basic User
+
+- TODO
+
+=== Basic Model
+
+- TODO
+
+=== Implicit
+
+- TODO
+
+=== Full
+
+- TODO
+
+== Custom Restrictors
 
 === User custom
 

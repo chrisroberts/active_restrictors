@@ -20,15 +20,10 @@ module ActiveRestrictors
         r_args = arg_h[:include_disabled] ? [:include_disabled] : []
         res = obj.class.full_restrictors(*r_args).map do |restrictor|
           [label(obj.class.name.camelize, restrictor[:name]),
-            obj.send(restrictor[:name]).map(&restrictor[:value].to_sym).join(val_join).html_safe]
+            obj.send(restrictor[:name]).map(&restrictor[:views][:value].to_sym).join(val_join).html_safe]
         end
       end
       res
-    end
-
-    def display_custom_restrictors(klass)
-      # Stub for now
-      []
     end
 
     # obj:: Instance with restrictors enabled
@@ -41,41 +36,36 @@ module ActiveRestrictors
       r_args = args[:include_disabled] ? [:include_disabled] : []
       if(obj.class.respond_to?(:full_restrictors))
         obj.class.full_restrictors(*r_args).map do |restrictor|
-          if(restrictor[:user_values_only])
-            if(restrictor[:user_values_only].respond_to?(:call))
-              user = restrictor[:user_values_only].call
+          if(restrictor[:views][:user_values_only])
+            if(restrictor[:views][:user_values_only].respond_to?(:call))
+              user = restrictor[:views][:user_values_only].call
               if(user)
                 values = user.send(restrictor[:name].to_sym).find(:all, :order => restrictor[:value])
               else
-                values = restrictor[:user_values_only].send(restrictor[:name].to_sym).find(:all, :order => restrictor[:value])
+                values = restrictor[:views][:user_values_only].send(restrictor[:name].to_sym).find(:all, :order => restrictor[:views][:value])
               end
             end
           end
           @_restrictor_inflector_helper ||= Class.send(:include, ActiveSupport::Inflector).new
-          values = restrictor[:class].find(:all, :order => restrictor[:value]) unless values
+          values = restrictor[:class].find(:all, :order => restrictor[:views][:value]) unless values
           [
             form.label(restrictor[:name]),
             form.collection_select(
               "#{@_restrictor_inflector_helper.singularize(restrictor[:name])}_ids",
               values,
-              restrictor[:id],
-              restrictor[:value],
+              restrictor[:views][:id],
+              restrictor[:views][:value],
               {
-                :include_blank => restrictor[:include_blank],
-                :selected => Array(obj.send(restrictor[:name])).map(&restrictor[:id].to_sym)
+                :include_blank => restrictor[:views][:include_blank],
+                :selected => Array(obj.send(restrictor[:name])).map(&restrictor[:views][:id].to_sym)
               },
-              :multiple => restrictor[:multiple]
+              :multiple => restrictor[:views][:multiple]
             )
           ]
         end
       else
         []
       end
-    end
-
-    def edit_custom_restrictors(klass)
-      # Stub for now
-      []
     end
   end
 end

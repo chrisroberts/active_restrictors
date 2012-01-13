@@ -1,4 +1,10 @@
-== v0.1.2
+== v0.2.0
+* Removed any remaining Rails 2 support
+* Added new parameter structure for defining restrictors
+* Added parameter mapping to allow old restrictor definitions to continue to function
+* Renamed :basic restrictor to :basic_user
+* Added two new restrictor types: basic_model and :implicit
+* Cleaned up restrictor functionality from both model directions
 * Updated #full_restrictors to provide all restrictors
 * Updated view helpers to provide all restrictors
 * Updated form building to use proper *_ids naming scheme
