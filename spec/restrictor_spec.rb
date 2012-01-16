@@ -202,4 +202,6 @@ describe ActiveRestrictor do
     end
   end
 
+  # TODO: Add specs for restrictor stacking behavior
+
 end
