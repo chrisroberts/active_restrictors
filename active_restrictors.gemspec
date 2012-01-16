@@ -9,6 +9,7 @@ Gem::Specification.new do |s|
   s.email = 'chrisroberts.code@gmail.com'
   s.homepage = 'http://bitbucket.org/chrisroberts/active_restrictors'
   s.description = 'Restrictors for Models'
+  s.add_dependency 'active_record', '~> 3.0'
   s.require_path = 'lib'
   s.extra_rdoc_files = ['README.rdoc', 'CHANGELOG.rdoc']
   s.files = %w(README.rdoc CHANGELOG.rdoc active_restrictors.gemspec) + Dir.glob("{lib}/**/*")
