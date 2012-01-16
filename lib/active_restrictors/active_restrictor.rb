@@ -107,7 +107,7 @@ module ActiveRestrictor
     end
 
     def restrictor_user_scoping
-      user_scope = _restrictor_custom_user_class
+      user_scope = _restrictor_custom_user_class.scoped
       basic_user_restrictors.each do |restrictor|
         user_scope = user_scope.merge(restrictor[:scope].respond_to?(:call) ? restrictor[:scope].call : restrictor[:scope])
       end
@@ -187,6 +187,7 @@ module ActiveRestrictor
       user_scope = self.class.restrictor_user_scoping
       if(klass_scope.count > 0)
         full_restrictors.each do |restrictor|
+          user_scope = user_scope.includes(restrictor[:name])
           unless(restrictor[:user_custom].present?)
             rtable_name = restrictor[:table_name] || restrictor[:class].table_name
             r_scope = self.send(restrictor[:name]).scoped.select("#{rtable_name}.id")
@@ -201,9 +202,14 @@ module ActiveRestrictor
             user_scope = restrictor[:user_custom].call(user_scope, self)
           end
         end
+        if(Array(implicit_restrictors).size > 0)
+          if(r = _restrictor_custom_user_class.reflect_on_all_associations.detect{|r| r.klass == self.class})
+            user_scope = user_scope.includes(r.name).merge(klass_scope)
+          end
+        end
         user_scope
       else
-        user_scope.where('false')
+        user_scope.where('null')
       end
     end
   end
@@ -232,7 +238,7 @@ module ActiveRestrictor
             r_scope.arel.ast.cores.first.projections.delete_if{|item| item != "#{base.table_name}.id"}
             where("#{table_name}.id IN (#{r_scope.to_sql})")
           else
-            where('false')
+            where('null')
           end
         }
       end
@@ -252,11 +258,11 @@ module ActiveRestrictor
           if(user_scope.count > 0)
             scope = klass.restrictor_klass_scoping
             klass.full_restrictors.each do |restrictor|
+              scope = scope.includes(restrictor[:name])
               if(restrictor[:scope].present?)
                 scope = scope.merge(restrictor[:scope].respond_to?(:call) ? restrictor[:scope].call : restrictor[:scope])
               end
               unless(restrictor[:model_custom].present?)
-                scope = scope.includes(restrictor[:name])
                 rtable_name = restrictor[:table_name] || restrictor[:class].table_name
                 r_scope = self.send(restrictor[:user_association] || restrictor[:name]).scoped.select("#{rtable_name}.id") # This gives us valid joiners!
                 # this next bit gets rid of the association_name.* rails insists upon and any extra cruft
@@ -272,7 +278,7 @@ module ActiveRestrictor
             end
             scope
           else
-            klass.where('false')
+            klass.where('null')
           end
         end
       end
