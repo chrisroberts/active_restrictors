@@ -1,16 +1,4 @@
-$:.unshift(File.expand_path(File.dirname(__FILE__) + '/../lib'))
-require 'rubygems'
-require 'bundler/setup'
-require 'active_record'
-require 'sqlite3'
-require 'active_restrictors'
-require 'minitest/autorun'
-
-ActiveRecord::Base.establish_connection(
-  :adapter => 'sqlite3',
-  :database => ':memory:'
-)
-load File.join(File.expand_path(File.dirname(__FILE__)), 'model_definitions.rb')
+require File.join(File.expand_path(File.dirname(__FILE__)), 'setup')
 
 describe ActiveRestrictor do
   # Check for proper setup at the start
