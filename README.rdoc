@@ -2,7 +2,7 @@
 
 Chainable ActiveRecord restrictions.
 
-[![Build Status](https://secure.travis-ci.org/chrisroberts/active_restrictors.png)](http://travis-ci.org/chrisroberts/active_restrictors)
+{<img src="https://secure.travis-ci.org/chrisroberts/active_restrictors.png" />}[http://travis-ci.org/chrisroberts/active_restrictors]
 
 === Overview
 
