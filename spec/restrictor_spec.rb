@@ -6,14 +6,9 @@ require 'sqlite3'
 require 'active_restrictors'
 require 'minitest/autorun'
 
-AR_DB_STORE = File.join(File.dirname(__FILE__), '.active_restrictor_db.sqlite3')
-
-if(File.exists?(AR_DB_STORE))
-  File.delete AR_DB_STORE
-end
 ActiveRecord::Base.establish_connection(
   :adapter => 'sqlite3',
-  :database => AR_DB_STORE
+  :database => ':memory:'
 )
 load File.join(File.expand_path(File.dirname(__FILE__)), 'model_definitions.rb')
 
