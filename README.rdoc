@@ -2,6 +2,8 @@
 
 Chainable ActiveRecord restrictions.
 
+[![Build Status](https://secure.travis-ci.org/chrisroberts/active_restrictors.png)](http://travis-ci.org/chrisroberts/active_restrictors)
+
 === Overview
 
 Restrictions are made via join tables between two models and a User object. Imagine these models:
