@@ -1,6 +1,4 @@
-require 'active_record'
-require 'active_record/migration'
-require 'benchmark'
+
 class ModelSetup < ActiveRecord::Migration
   def self.up
     create_table :users do |t|
