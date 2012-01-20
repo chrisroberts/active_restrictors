@@ -26,9 +26,13 @@ class ModelSetup < ActiveRecord::Migration
       t.integer :fubar_id
       t.integer :permission_id
     end
-    create_table :group_permissions do |t|
+    create_table :user_groups do |t|
       t.integer :group_id
-      t.integer :permission_id
+      t.integer :user_id
+    end
+    create_table :fubar_groups do |t|
+      t.integer :group_id
+      t.integer :fubar_id
     end
   end
 end
@@ -39,6 +43,8 @@ class User < ActiveRecord::Base
   cattr_accessor :current_user
   has_many :user_permissions, :dependent => :destroy
   has_many :permissions, :through => :user_permissions
+  has_many :user_groups, :dependent => :destroy
+  has_many :groups, :through => :user_groups
   has_many :fubars, :dependent => :destroy
 end
 
@@ -47,19 +53,21 @@ class Permission < ActiveRecord::Base
   has_many :users, :through => :user_permissions
   has_many :fubar_permissions, :dependent => :destroy
   has_many :fubars, :through => :fubar_permissions
-  has_many :group_permissions, :dependent => :destroy
-  has_many :groups, :through => :group_permissions
 end
 
 class Group < ActiveRecord::Base
-  has_many :group_permissions, :dependent => :destroy
-  has_many :groups, :through => :group_permissions
+  has_many :user_groups, :dependent => :destroy
+  has_many :users, :through => :user_groups
+  has_many :fubar_groups, :dependent => :destroy
+  has_many :fubars, :through => :fubar_groups
 end
 
 class Fubar < ActiveRecord::Base
   include ActiveRestrictor
   has_many :fubar_permissions, :dependent => :destroy
   has_many :permissions, :through => :fubar_permissions
+  has_many :fubar_groups, :dependent => :destroy
+  has_many :groups, :through => :fubar_groups
   belongs_to :user
 end
 
@@ -71,6 +79,26 @@ end
 class FubarPermission < ActiveRecord::Base
   belongs_to :fubar
   belongs_to :permission
+end
+
+class FubarGroup < ActiveRecord::Base
+  belongs_to :fubar
+  belongs_to :group
+end
+
+class UserGroup < ActiveRecord::Base
+  belongs_to :user
+  belongs_to :group
+end
+
+def scrub_all
+  Fubar.restrictors.clear
+  UserGroup.delete_all
+  FubarGroup.delete_all
+  UserPermission.delete_all
+  FubarPermission.delete_all
+  User.current_user = nil
+  Fubar.update_all(:user_id => nil)
 end
 
 # Setup our test models
