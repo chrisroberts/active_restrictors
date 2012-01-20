@@ -12,5 +12,5 @@ Gem::Specification.new do |s|
   s.add_dependency 'activerecord', '~> 3.0'
   s.require_path = 'lib'
   s.extra_rdoc_files = ['README.rdoc', 'CHANGELOG.rdoc']
-  s.files = %w(README.rdoc CHANGELOG.rdoc active_restrictors.gemspec) + Dir.glob("{lib}/**/*")
+  s.files = Dir.glob('**/*')
 end
