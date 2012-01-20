@@ -191,11 +191,13 @@ module ActiveRestrictor
           unless(restrictor[:user_custom].present?)
             rtable_name = restrictor[:table_name] || restrictor[:class].table_name
             r_scope = self.send(restrictor[:name]).scoped.select("#{rtable_name}.id")
+            r_count = self.send(restrictor[:name]).scoped.select("count(*)")
             # this next bit gets rid of the association_name.* rails insists upon and any extra cruft
             r_scope.arel.ast.cores.first.projections.delete_if{|item| item != "#{rtable_name}.id"}
+            r_count.arel.ast.cores.first.projections.delete_if{|item| item != "count(*)"}
             user_scope = user_scope.where(
               "#{rtable_name}.id IN (#{r_scope.to_sql})#{
-                " OR #{rtable_name}.id IS NULL" if restrictor[:default_allowed_all]
+                " OR (#{r_count.to_sql}) = 0" if restrictor[:default_allowed_all]
               }"
             )
           else
