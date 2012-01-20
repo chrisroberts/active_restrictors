@@ -28,10 +28,14 @@ module ActiveRestrictor
       new_opts[:views] ||= {}
       new_opts = map_deprecated_hash(new_opts)
       new_opts[:views][:id] ||= :id
-      if(new_opts[:type] == :full)
-        raise 'Value must be defined for association to generate views' unless new_opts[:views][:value].present?
-      end
       new_opts[:class] = restrictor_class(new_opts)
+      if(new_opts[:type] == :full && new_opts[:views][:value].blank?)
+        if(new_opts[:class].column_names.include?('name'))
+          new_opts[:views][:value] = :name
+        else
+          raise 'Value must be defined for association to generate views'
+        end
+      end
       self.restrictors.push(new_opts)
     end
 
