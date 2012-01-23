@@ -23,20 +23,22 @@ module ActiveRestrictor
     #       Implicit type is run directly against the source model. (ex: Fubar.includes(:feebar).where(:feebars => {:user_id => User.current_user.id}))
     #       Full is a full restrictor using join tables and provides view helpers for management
     def add_restrictor(name, opts={})
-      self.restrictors ||= []
-      new_opts = {:name => name, :enabled => true, :type => :full, :scope => self.scoped, :default_allowed_all => false}.merge(opts)
-      new_opts[:views] ||= {}
-      new_opts = map_deprecated_hash(new_opts)
-      new_opts[:views][:id] ||= :id
-      new_opts[:class] = restrictor_class(new_opts)
-      if(new_opts[:type] == :full && new_opts[:views][:value].blank?)
-        if(new_opts[:class].column_names.include?('name'))
-          new_opts[:views][:value] = :name
-        else
-          raise 'Value must be defined for association to generate views'
+      if(table_exists?)
+        self.restrictors ||= []
+        new_opts = {:name => name, :enabled => true, :type => :full, :scope => self.scoped, :default_allowed_all => false}.merge(opts)
+        new_opts[:views] ||= {}
+        new_opts = map_deprecated_hash(new_opts)
+        new_opts[:views][:id] ||= :id
+        new_opts[:class] = restrictor_class(new_opts)
+        if(new_opts[:type] == :full && new_opts[:views][:value].blank?)
+          if(new_opts[:class].column_names.include?('name'))
+            new_opts[:views][:value] = :name
+          else
+            raise 'Value must be defined for association to generate views'
+          end
         end
+        self.restrictors.push(new_opts)
       end
-      self.restrictors.push(new_opts)
     end
 
     # TODO: Add in proper mapping plus scope building
