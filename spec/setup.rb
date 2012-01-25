@@ -1,8 +1,6 @@
 require 'rubygems'
 require 'bundler/setup'
-if(RUBY_PLATFORM == 'java')
-  require 'jdbc/sqlite3'
-else
+unless(RUBY_PLATFORM == 'java')
   require 'sqlite3'
 end
 require 'active_record'
