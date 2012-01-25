@@ -8,14 +8,11 @@ rvm:
   - rbx-18mode
   - rbx-19mode
   - ree
+before_install:
+  - gem update --system
+  - gem --version # make sure rubygems actually were updated
 script: bundle exec rake test
 gemfile:
   - gemfiles/activerecord3_0.gemfile
   - gemfiles/activerecord3_1.gemfile
   - gemfiles/activerecord3_2.gemfile
-matrix:
-  exclude:
-    - rvm: jruby-19mode
-      gemfile: gemfiles/activerecord3_2.gemfile
-    - rvm: jruby-18mode
-      gemfile: gemfiles/activerecord3_2.gemfile
