@@ -16,6 +16,6 @@ gemfile:
   - gemfiles/activerecord3_1.gemfile
   - gemfiles/activerecord3_2.gemfile
 matrix:
-  exclue:
+  exclude:
     - rvm: jruby-18mode
       gemfile: gemfiles/activerecord3_2.gemfile
