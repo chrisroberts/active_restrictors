@@ -1,3 +1,6 @@
+== v0.2.1
+* Restrictors not added if table does not exist (allows restrictors to be defined before migration has setup model)
+
 == v0.2.0
 * Removed any remaining Rails 2 support
 * Added new parameter structure for defining restrictors
@@ -8,7 +11,6 @@
 * Updated #full_restrictors to provide all restrictors
 * Updated view helpers to provide all restrictors
 * Updated form building to use proper *_ids naming scheme
-* Restrictors not added if table does not exist (allows restrictors to be defined before migration has setup model)
 
 == v0.1.1
 * Fixed class eval blocks
