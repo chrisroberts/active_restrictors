@@ -40,9 +40,9 @@ module ActiveRestrictors
             if(restrictor[:views][:user_values_only].respond_to?(:call))
               user = restrictor[:views][:user_values_only].call
               if(user)
-                values = user.send(restrictor[:name].to_sym).find(:all, :order => restrictor[:value])
+                values = user.send(restrictor[:name]).to_sym).order(:restrictor[:value]).all
               else
-                values = restrictor[:views][:user_values_only].send(restrictor[:name].to_sym).find(:all, :order => restrictor[:views][:value])
+                values = restrictor[:value][:user_values_only].send(restrictor[:name].to_sym).order(restrictor[:view][:value]).all
               end
             end
           end
@@ -53,7 +53,7 @@ module ActiveRestrictors
               restrictor[:name], 
               :as => :select, 
               :collection => ActiveSupport::OrderdHash[
-                *restrictor[:class].all.order(restrictor[:views][:value]).all.map{|r|
+                *restrictor[:class].order(restrictor[:views][:value]).all.map{|r|
                   [r.send(restrictor[:views][:value]), r.id]
                 }.flatten
               ]
