@@ -48,20 +48,32 @@ module ActiveRestrictors
           end
           @_restrictor_inflector_helper ||= Class.send(:include, ActiveSupport::Inflector).new
           values = restrictor[:class].find(:all, :order => restrictor[:views][:value]) unless values
-          [
-            form.label(restrictor[:name]),
-            form.collection_select(
-              "#{@_restrictor_inflector_helper.singularize(restrictor[:name])}_ids",
-              values,
-              restrictor[:views][:id],
-              restrictor[:views][:value],
-              {
-                :include_blank => restrictor[:views][:include_blank],
-                :selected => Array(obj.send(restrictor[:name])).map(&restrictor[:views][:id].to_sym)
-              },
-              :multiple => restrictor[:views][:multiple]
+          if(defined?(Formtastic) && form.is_a?(Formtastic::FormBuilder))
+            form.inputs(
+              restrictor[:name], 
+              :as => :select, 
+              :collection => ActiveSupport::OrderdHash[
+                *restrictor[:class].all.order(restrictor[:views][:value]).all.map{|r|
+                  [r.send(restrictor[:views][:value]), r.id]
+                }.flatten
+              ]
             )
-          ]
+          else
+            [
+              form.label(restrictor[:name]),
+              form.collection_select(
+                "#{@_restrictor_inflector_helper.singularize(restrictor[:name])}_ids",
+                values,
+                restrictor[:views][:id],
+                restrictor[:views][:value],
+                {
+                  :include_blank => restrictor[:views][:include_blank],
+                  :selected => Array(obj.send(restrictor[:name])).map(&restrictor[:views][:id].to_sym)
+                },
+                :multiple => restrictor[:views][:multiple]
+              )
+            ]
+          end
         end
       else
         []
