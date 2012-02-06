@@ -223,34 +223,47 @@ module ActiveRestrictor
   end
 
   def self.included(klass)
-    # Patch up the model we have been called on
-    ([klass] + klass.descendants).compact.each do |base|
-      base.class_eval do
-        cattr_accessor :restrictors
-        
-        extend ClassMethods
-        include InstanceMethods
+    patch_base_restrictors(klass) unless klass.instance_methods.include?(:add_restrictor)
+    patch_user_restrictors(klass)
+  end
 
-        unless(base.singleton_methods.map(&:to_sym).include?(:_restrictor_custom_user_class))
-          class << self
-            # This can be overridden for customization
-            def _restrictor_custom_user_class
-              User
-            end
+  def self.patch_base_restrictors(klass)
+    # Patch up the model we have been called on
+    klass.class_eval do
+      cattr_accessor :restrictors
+      
+      extend ClassMethods
+      include InstanceMethods
+
+      unless(klass.singleton_methods.map(&:to_sym).include?(:_restrictor_custom_user_class))
+        class << self
+          # This can be overridden for customization
+          def _restrictor_custom_user_class
+            User
           end
         end
-        scope :allowed_for, lambda{|*args|
-          user = args.detect{|item|item.is_a?(User)}
-          if(user.present?)
-            r_scope = user.send("allowed_#{base.name.tableize}").select("#{base.table_name}.id")
-            r_scope.arel.ast.cores.first.projections.delete_if{|item| item != "#{base.table_name}.id"}
-            where("#{table_name}.id IN (#{r_scope.to_sql})")
-          else
-            where('null')
-          end
-        }
+      end
+      scope :allowed_for, lambda{|*args|
+        user = args.detect{|item|item.is_a?(User)}
+        if(user.present?)
+          r_scope = user.send("allowed_#{klass.name.tableize}").select("#{klass.table_name}.id")
+          r_scope.arel.ast.cores.first.projections.delete_if{|item| item != "#{klass.table_name}.id"}
+          where("#{table_name}.id IN (#{r_scope.to_sql})")
+        else
+          where('null')
+        end
+      }
+
+      class << self
+        def inherited(klass)
+          ActiveRestrictor.patch_user_restrictors(klass)
+          super
+        end
       end
     end
+  end
+
+  def self.patch_user_restrictors(klass)
     # Patch up the user to provide restricted methods
     ([klass._restrictor_custom_user_class] + klass._restrictor_custom_user_class.descendants).compact.each do |user_klass|
       user_klass.class_eval do
