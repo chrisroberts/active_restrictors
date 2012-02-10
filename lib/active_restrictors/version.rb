@@ -13,5 +13,5 @@ module ActiveRestrictors
     end
   end
 
-  VERSION = Version.new('0.2.1')
+  VERSION = Version.new('0.2.2')
 end
