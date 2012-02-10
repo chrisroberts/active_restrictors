@@ -49,14 +49,16 @@ module ActiveRestrictors
           @_restrictor_inflector_helper ||= Class.send(:include, ActiveSupport::Inflector).new
           values = restrictor[:class].find(:all, :order => restrictor[:views][:value]) unless values
           if(defined?(Formtastic) && form.is_a?(Formtastic::FormBuilder))
-            form.inputs(
-              restrictor[:name], 
-              :as => :select, 
+            form.input(
+              restrictor[:name],
+              :as => :select,
               :collection => ActiveSupport::OrderedHash[
                 *restrictor[:class].order(restrictor[:views][:value]).all.map{|r|
                   [r.send(restrictor[:views][:value]), r.id]
                 }.flatten
-              ]
+              ],
+              :multiple => restrictor[:views][:multiple],
+              :include_blank => true
             )
           else
             [
