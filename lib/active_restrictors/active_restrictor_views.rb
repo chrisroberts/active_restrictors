@@ -47,7 +47,14 @@ module ActiveRestrictors
             end
           end
           @_restrictor_inflector_helper ||= Class.send(:include, ActiveSupport::Inflector).new
-          values = restrictor[:class].find(:all, :order => restrictor[:views][:value]) unless values
+          unless(values)
+            values = restrictor[:class].scoped
+            if(restrictor[:views][:scope])
+              scoping = restrictor[:views][:scope].respond_to?(:call) ? restrictor[:views][:scope].call : restrictor[:views][:scope]
+              values = values.merge(scoping) if scoping
+              values = values.order("#{restrictor[:class].table_name}.#{restrictor[:views][:value]}").all
+            end
+          end
           if(defined?(Formtastic) && form.is_a?(Formtastic::FormBuilder))
             form.input(
               restrictor[:name],
