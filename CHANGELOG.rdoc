@@ -1,3 +1,6 @@
+== v0.2.3
+* Adds :scope key to :views hash in restrictor to limit valid assignments
+
 == v0.2.2
 * Added support for formtastic to view helpers
 * Cleaned up dynamic method generation
